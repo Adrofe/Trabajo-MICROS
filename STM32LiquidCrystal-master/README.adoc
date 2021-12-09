@@ -1,0 +1,45 @@
+= Liquid Crystal Library for ARM STM32 =
+
+This library allows a STM32 ARM microcontroller to control LiquidCrystal displays (LCDs) based on the Hitachi HD44780 (or a compatible) chipset, which is found on most text-based LCDs.
+This is a port of LiquidCrystal library from Arduino.
+
+== This library currently supports the following functionalities ==
+
+* https://github.com/SayidHosseini/STM32LiquidCrystal/blob/master/examples/Autoscroll/main.c[En/Dis Autoscroll]
+* https://github.com/SayidHosseini/STM32LiquidCrystal/blob/master/examples/Blink/main.c[En/Dis Blink]
+* https://github.com/SayidHosseini/STM32LiquidCrystal/blob/master/examples/Cursor/main.c[En/Dis Cursor]
+* https://github.com/SayidHosseini/STM32LiquidCrystal/tree/master/examples/CustomCharacter/main.c[Custome Character]
+* https://github.com/SayidHosseini/STM32LiquidCrystal/blob/master/examples/Display/main.c[On/Off Display]
+* https://github.com/SayidHosseini/STM32LiquidCrystal/blob/master/examples/Scroll/main.c[Scrol Left or Right]
+* https://github.com/SayidHosseini/STM32LiquidCrystal/tree/master/examples/SerialDisplay/main.c[Serial Display]
+* https://github.com/SayidHosseini/STM32LiquidCrystal/blob/master/examples/setCursor/main.c[Set Cursor position]
+* https://github.com/SayidHosseini/STM32LiquidCrystal/blob/master/examples/TextDirection/main.c[Changing Text Direction]
+
+{empty} +
+{empty} +
+
+TIP: *The examples have been built for the STM32F3 Discovery, but the library should work on any STM32 ARM microcontroller.*
+
+NOTE: *This library and its examples are originated from
+http://www.arduino.cc/en/Reference/LiquidCrystal*
+
+{empty} +
+
+== License ==
+
+Copyright (C) 2006-2008 Hans-Christoph Steiner. All rights reserved.
+Copyright (C) 2010 Arduino LLC. All right reserved.
+
+This library is free software; you can redistribute it and/or
+modify it under the terms of the GNU Lesser General Public
+License as published by the Free Software Foundation; either
+version 2.1 of the License, or (at your option) any later version.
+
+This library is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public
+License along with this library; if not, write to the Free Software
+Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
