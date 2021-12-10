@@ -24,4 +24,4 @@ STM_MY_LCD16X2.c:327:6:LCD1602_display	8	static
 STM_MY_LCD16X2.c:333:6:LCD1602_shiftToRight	24	static
 STM_MY_LCD16X2.c:340:6:LCD1602_shiftToLeft	24	static
 STM_MY_LCD16X2.c:350:6:LCD1602_PrintInt	32	static
-STM_MY_LCD16X2.c:357:6:LCD1602_PrintFloat	40	static
+STM_MY_LCD16X2.c:366:6:LCD1602_PrintFloat	56	static

@@ -101,4 +101,5 @@ void LCD1602_shiftToLeft(uint8_t num);
 //1. Integer
 void LCD1602_PrintInt(int number);
 //2. Float
-void LCD1602_PrintFloat(float number, int decimalPoints);
+//void LCD1602_PrintFloat(float number, int decimalPoints);
+void LCD1602_PrintFloat(float number);

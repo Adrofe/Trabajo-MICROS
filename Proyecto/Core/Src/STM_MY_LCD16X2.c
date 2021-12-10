@@ -354,12 +354,14 @@ void LCD1602_PrintInt(int number)
 	LCD1602_print(numStr);
 }
 //2. Float
-void LCD1602_PrintFloat(float number, int decimalPoints)
+/*
+ /void LCD1602_PrintFloat(float number, int decimalPoints)
 {
 	char numStr[16];
 	sprintf(numStr,"%.*f",decimalPoints, number);
 	LCD1602_print(numStr);
 }
+*/
 
 void LCD1602_PrintFloat(float number)
 {

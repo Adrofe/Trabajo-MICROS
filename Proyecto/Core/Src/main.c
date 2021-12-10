@@ -87,12 +87,11 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   /* USER CODE BEGIN 2 */
-  int temperatura = 17.17;
+  float temperatura = 20.17;
   LCD1602_Begin8BIT(RS_GPIO_Port, RS_Pin, E_Pin, D0_GPIO_Port, D0_Pin, D1_Pin, D2_Pin, D3_Pin, D4_GPIO_Port, D4_Pin, D5_Pin, D6_Pin, D7_Pin);
   LCD1602_print("TempA: ");
-  //LCD1602_PrintInt(temperatura);
-  LCD1602_PrintFloat(temperatura,2);
-  //LCD1602_PrintFloat(2.0472421,2);
+  LCD1602_PrintFloat(temperatura);
+  //LCD1602_PrintFloat(17.17);
 
 
   LCD1602_2ndLine();
