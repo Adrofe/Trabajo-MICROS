@@ -361,3 +361,25 @@ void LCD1602_PrintFloat(float number, int decimalPoints)
 	LCD1602_print(numStr);
 }
 
+void LCD1602_PrintFloat(float number)
+{
+	int num[5];
+	number = number * 100;
+
+	num[0] = (int)number / 10000;
+	number = (int)number % 10000;
+	num[1] = (int)number / 1000;
+	number = (int)number % 1000;
+	num[2] = (int)number / 100;
+	number = (int)number % 100;
+	num[3] = (int)number / 10;
+	number = (int)number % 10;
+	num[4] = (int)number;
+
+	for (i=0;i<5;i++){
+		if num[i]>0{
+			LCD1602_PrintInt(num[i]);
+			if (i == 2) LCD1602_print(".");
+		}
+	}
+}
