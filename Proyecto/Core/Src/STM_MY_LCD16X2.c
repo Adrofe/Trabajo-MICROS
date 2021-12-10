@@ -365,7 +365,6 @@ void LCD1602_PrintFloat(float number)
 {
 	int num[5];
 	number = number * 100;
-
 	num[0] = (int)number / 10000;
 	number = (int)number % 10000;
 	num[1] = (int)number / 1000;
@@ -376,9 +375,32 @@ void LCD1602_PrintFloat(float number)
 	number = (int)number % 10;
 	num[4] = (int)number;
 
-	for (i=0;i<5;i++){
-		if num[i]>0{
-			LCD1602_PrintInt(num[i]);
+	if (num[0] == 0) {
+		if (num[1] == 0) {
+			if (num[2] == 0) {
+				LCD1602_PrintInt(0);
+				LCD1602_print(".");
+				for (int i = 3; i < 5; i++) {
+					LCD1602_PrintInt(num[i]);
+				}
+			}
+			else {
+				for (int i = 2; i < 5; i++) {
+					LCD1602_PrintInt(num[i]);
+					if (i == 2) LCD1602_print(".");
+				}
+			}
+		}
+		else {
+			for (int i = 1; i < 5; i++) {
+				LCD1602_PrintInt(num[i]);
+				if (i == 2) LCD1602_print(".");
+			}
+		}
+	}
+	else {
+		for (int i = 0; i < 5; i++) {
+			printf(num[i]);
 			if (i == 2) LCD1602_print(".");
 		}
 	}
