@@ -58,6 +58,11 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define Boton_Pin GPIO_PIN_0
+#define Boton_GPIO_Port GPIOA
+#define Boton_EXTI_IRQn EXTI0_IRQn
+#define SensorAgua_Pin GPIO_PIN_5
+#define SensorAgua_GPIO_Port GPIOC
 #define D0_Pin GPIO_PIN_12
 #define D0_GPIO_Port GPIOB
 #define D1_Pin GPIO_PIN_13
@@ -74,6 +79,8 @@ void Error_Handler(void);
 #define D6_GPIO_Port GPIOD
 #define D7_Pin GPIO_PIN_11
 #define D7_GPIO_Port GPIOD
+#define BombaAgua_Pin GPIO_PIN_4
+#define BombaAgua_GPIO_Port GPIOD
 #define RS_Pin GPIO_PIN_0
 #define RS_GPIO_Port GPIOE
 #define E_Pin GPIO_PIN_1
