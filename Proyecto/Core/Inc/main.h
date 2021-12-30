@@ -61,6 +61,8 @@ void Error_Handler(void);
 #define Boton_Pin GPIO_PIN_0
 #define Boton_GPIO_Port GPIOA
 #define Boton_EXTI_IRQn EXTI0_IRQn
+#define DHT11_Pin GPIO_PIN_1
+#define DHT11_GPIO_Port GPIOA
 #define SensorAgua_Pin GPIO_PIN_5
 #define SensorAgua_GPIO_Port GPIOC
 #define D0_Pin GPIO_PIN_12
