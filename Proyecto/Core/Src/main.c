@@ -76,8 +76,8 @@ static void MX_TIM6_Init(void);
 
 /********************************* FUNCIONES DHT11 ***********************/
 //Definir los puertos donde está el sensor:
-#define DHT11_PORT GPIOA
-#define DHT11_PIN GPIO_PIN_1
+#define DHT11_PORT DHT11_GPIO_Port
+#define DHT11_PIN DHT11_Pin
 
 void Set_Pin_Output (GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin)
 {
@@ -92,7 +92,7 @@ void Set_Pin_Input (GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin)
 	GPIO_InitTypeDef GPIO_InitStruct = {0};
 	GPIO_InitStruct.Pin = GPIO_Pin;
 	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-	GPIO_InitStruct.Pull = GPIO_PULLUP;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
 	HAL_GPIO_Init(GPIOx, &GPIO_InitStruct);
 }
 
@@ -105,6 +105,8 @@ void delay (uint16_t time)
 
 void DHT11_Start (void)
 {
+	HAL_GPIO_WritePin(DHT11_PORT, DHT11_PIN, 1);     //Initialize with Data pin HIGH
+	HAL_Delay(300);
 	Set_Pin_Output (DHT11_PORT, DHT11_PIN);  // set the pin as output
 	HAL_GPIO_WritePin (DHT11_PORT, DHT11_PIN, 0);   // pull the pin low
 	delay (18000);   // wait for 18ms
@@ -221,7 +223,7 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	  HAL_Delay(10);
+	  HAL_Delay(2000);
 	  // GPIO INPUT test
 	  //AGUA
 	  if (HAL_GPIO_ReadPin (GPIOC, SensorAgua_Pin)){
@@ -256,6 +258,7 @@ int main(void)
 	  temperatura = (float) TEMP;
 	  humedad = (float) RH;
 
+	  LCD1602_clear();
 	  LCD1602_print("TempA: ");
 	  LCD1602_PrintFloat(temperatura);
 	  LCD1602_2ndLine();
@@ -467,7 +470,8 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOE_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(DHT11_GPIO_Port, DHT11_Pin, GPIO_PIN_RESET);
+  //HAL_GPIO_WritePin(DHT11_GPIO_Port, DHT11_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(DHT11_GPIO_Port, DHT11_Pin, 1);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, D0_Pin|D1_Pin|D2_Pin|D3_Pin, GPIO_PIN_RESET);
