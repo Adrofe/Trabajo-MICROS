@@ -92,7 +92,7 @@ void Set_Pin_Input (GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin)
 	GPIO_InitTypeDef GPIO_InitStruct = {0};
 	GPIO_InitStruct.Pin = GPIO_Pin;
 	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Pull = GPIO_PULLUP;
 	HAL_GPIO_Init(GPIOx, &GPIO_InitStruct);
 }
 
@@ -179,8 +179,7 @@ int main(void)
   /* MCU Configuration--------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-
-	HAL_Init();
+  HAL_Init();
 
   /* USER CODE BEGIN Init */
 
@@ -211,6 +210,7 @@ int main(void)
 
   //Sensor humedad
   HAL_TIM_Base_Start(&htim6);
+  HAL_Delay(2000);
 
   /* USER CODE END 2 */
 
@@ -225,11 +225,11 @@ int main(void)
 	  // GPIO INPUT test
 	  //AGUA
 	  if (HAL_GPIO_ReadPin (GPIOC, SensorAgua_Pin)){
-		  HAL_GPIO_WritePin(GPIOD,GPIO_PIN_13,1);
+		  HAL_GPIO_WritePin(GPIOD,GPIO_PIN_15,1);
 		  agua = 0;
 	  }
 	  else {
-		  HAL_GPIO_WritePin(GPIOD,GPIO_PIN_13,0);
+		  HAL_GPIO_WritePin(GPIOD,GPIO_PIN_15,0);
 		  agua = 1;
 	  }
 	  //ADC CON INTERRUPCIONES
@@ -239,6 +239,7 @@ int main(void)
 		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, 1);
 	  }
 	  else HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, 0);
+
 
 	  //SENSOR HUMEDAD
 	  DHT11_Start();
@@ -262,12 +263,12 @@ int main(void)
 	  LCD1602_PrintFloat(humedad);
 
 	  //HELICE
-	  if (temperatura > X){
-		  HAL_GPIO_WritePin(GPIOD, HELICE, 1);
-	  }
-	  else {
-		  HAL_GPIO_WritePin(GPIOD, HELICE, 0);
-	  }
+	//  if (temperatura > X){
+	//	  HAL_GPIO_WritePin(GPIOD, HELICE, 1);
+	//  }
+	//  else {
+	//	  HAL_GPIO_WritePin(GPIOD, HELICE, 0);
+	 // }
   }
   /* USER CODE END 3 */
 }
@@ -288,12 +289,11 @@ void SystemClock_Config(void)
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
-  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-  RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
-  RCC_OscInitStruct.PLL.PLLM = 8;
+  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
+  RCC_OscInitStruct.PLL.PLLM = 4;
   RCC_OscInitStruct.PLL.PLLN = 50;
   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
   RCC_OscInitStruct.PLL.PLLQ = 7;
@@ -308,7 +308,7 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
   if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_1) != HAL_OK)
   {
@@ -459,6 +459,7 @@ static void MX_GPIO_Init(void)
   GPIO_InitTypeDef GPIO_InitStruct = {0};
 
   /* GPIO Ports Clock Enable */
+  __HAL_RCC_GPIOH_CLK_ENABLE();
   __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
@@ -487,7 +488,7 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin : DHT11_Pin */
   GPIO_InitStruct.Pin = DHT11_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(DHT11_GPIO_Port, &GPIO_InitStruct);
 
