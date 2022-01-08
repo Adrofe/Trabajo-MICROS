@@ -43,6 +43,7 @@
 
 /* Private variables ---------------------------------------------------------*/
 ADC_HandleTypeDef hadc1;
+ADC_HandleTypeDef hadc2;
 
 TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim6;
@@ -58,7 +59,9 @@ float temperatura = 0;
 float humedad = 0;
 uint8_t presencia = 0;
 
-uint32_t adcvalue;
+uint32_t valorAgua;
+uint32_t valorLDR;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -67,6 +70,7 @@ static void MX_GPIO_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_ADC1_Init(void);
 static void MX_TIM6_Init(void);
+static void MX_ADC2_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -163,7 +167,11 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 void HAL_ADC_ConvCpltCallback (ADC_HandleTypeDef * hadc){
 
 	if (hadc->Instance == ADC1){
-		adcvalue = HAL_ADC_GetValue(&hadc1);
+		valorAgua = HAL_ADC_GetValue(&hadc1);
+	}
+
+	if (hadc->Instance == ADC2){
+		valorLDR = HAL_ADC_GetValue(&hadc2);
 	}
 }
 /* USER CODE END 0 */
@@ -199,6 +207,7 @@ int main(void)
   MX_TIM2_Init();
   MX_ADC1_Init();
   MX_TIM6_Init();
+  MX_ADC2_Init();
   /* USER CODE BEGIN 2 */
 
   //PRUEBA LCD
@@ -206,9 +215,6 @@ int main(void)
   LCD1602_print("Hola");
   //LCD1602_PrintFloat(temperatura);
 
-
-  //PRUEBA ADC IT
-  HAL_ADC_Start_IT(&hadc1);
 
   //Sensor humedad
   HAL_TIM_Base_Start(&htim6);
@@ -223,27 +229,42 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	  HAL_Delay(2000);
+	  HAL_Delay(10);
 	  // GPIO INPUT test
+
+
 	  //AGUA
-	  if (HAL_GPIO_ReadPin (GPIOC, SensorAgua_Pin)){
-		  HAL_GPIO_WritePin(GPIOD,GPIO_PIN_15,1);
-		  agua = 0;
-	  }
-	  else {
-		  HAL_GPIO_WritePin(GPIOD,GPIO_PIN_15,0);
-		  agua = 1;
-	  }
+	 // if (HAL_GPIO_ReadPin (GPIOC, SensorAgua_Pin)){
+	//	  HAL_GPIO_WritePin(GPIOD,GPIO_PIN_15,1);
+	//	  agua = 0;
+	 // }
+	 // else {
+		//  HAL_GPIO_WritePin(GPIOD,GPIO_PIN_15,0);
+		//  agua = 1;
+	 // }
+
+
 	  //ADC CON INTERRUPCIONES
 	  HAL_ADC_Start_IT(&hadc1);
+	  HAL_ADC_Start_IT(&hadc2);
+
 	  //ADC test
-	  if (adcvalue>128) {
+	  if (valorAgua>350) {
 		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, 1);
 	  }
 	  else HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, 0);
 
+	  if (valorLDR>900) {
+	  		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, 1);
+	  	  }
+	  	  else HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, 0);
 
 	  //SENSOR HUMEDAD
+	  uint32_t tiempo_espera = 2000;
+	  uint32_t tickstart = HAL_GetTick();
+	  while((HAL_GetTick() - tickstart) < tiempo_espera){
+
+	  }
 	  DHT11_Start();
 	  presencia = DHT11_Check_Response();
 	  Rh_byte1 = DHT11_Read();
@@ -356,9 +377,9 @@ static void MX_ADC1_Init(void)
   }
   /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
   */
-  sConfig.Channel = ADC_CHANNEL_10;
+  sConfig.Channel = ADC_CHANNEL_15;
   sConfig.Rank = 1;
-  sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
+  sConfig.SamplingTime = ADC_SAMPLETIME_480CYCLES;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
     Error_Handler();
@@ -366,6 +387,56 @@ static void MX_ADC1_Init(void)
   /* USER CODE BEGIN ADC1_Init 2 */
 
   /* USER CODE END ADC1_Init 2 */
+
+}
+
+/**
+  * @brief ADC2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_ADC2_Init(void)
+{
+
+  /* USER CODE BEGIN ADC2_Init 0 */
+
+  /* USER CODE END ADC2_Init 0 */
+
+  ADC_ChannelConfTypeDef sConfig = {0};
+
+  /* USER CODE BEGIN ADC2_Init 1 */
+
+  /* USER CODE END ADC2_Init 1 */
+  /** Configure the global features of the ADC (Clock, Resolution, Data Alignment and number of conversion)
+  */
+  hadc2.Instance = ADC2;
+  hadc2.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV8;
+  hadc2.Init.Resolution = ADC_RESOLUTION_10B;
+  hadc2.Init.ScanConvMode = DISABLE;
+  hadc2.Init.ContinuousConvMode = ENABLE;
+  hadc2.Init.DiscontinuousConvMode = DISABLE;
+  hadc2.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
+  hadc2.Init.ExternalTrigConv = ADC_SOFTWARE_START;
+  hadc2.Init.DataAlign = ADC_DATAALIGN_RIGHT;
+  hadc2.Init.NbrOfConversion = 1;
+  hadc2.Init.DMAContinuousRequests = DISABLE;
+  hadc2.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
+  if (HAL_ADC_Init(&hadc2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
+  */
+  sConfig.Channel = ADC_CHANNEL_10;
+  sConfig.Rank = 1;
+  sConfig.SamplingTime = ADC_SAMPLETIME_480CYCLES;
+  if (HAL_ADC_ConfigChannel(&hadc2, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN ADC2_Init 2 */
+
+  /* USER CODE END ADC2_Init 2 */
 
 }
 
@@ -470,8 +541,7 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOE_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  //HAL_GPIO_WritePin(DHT11_GPIO_Port, DHT11_Pin, GPIO_PIN_RESET);
-  HAL_GPIO_WritePin(DHT11_GPIO_Port, DHT11_Pin, 1);
+  HAL_GPIO_WritePin(DHT11_GPIO_Port, DHT11_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, D0_Pin|D1_Pin|D2_Pin|D3_Pin, GPIO_PIN_RESET);
@@ -495,12 +565,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(DHT11_GPIO_Port, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : SensorAgua_Pin */
-  GPIO_InitStruct.Pin = SensorAgua_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(SensorAgua_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : D0_Pin D1_Pin D2_Pin D3_Pin */
   GPIO_InitStruct.Pin = D0_Pin|D1_Pin|D2_Pin|D3_Pin;

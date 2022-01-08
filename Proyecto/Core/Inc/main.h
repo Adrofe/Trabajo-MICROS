@@ -58,13 +58,15 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define LDR_Pin GPIO_PIN_0
+#define LDR_GPIO_Port GPIOC
 #define Boton_Pin GPIO_PIN_0
 #define Boton_GPIO_Port GPIOA
 #define Boton_EXTI_IRQn EXTI0_IRQn
 #define DHT11_Pin GPIO_PIN_1
 #define DHT11_GPIO_Port GPIOA
-#define SensorAgua_Pin GPIO_PIN_5
-#define SensorAgua_GPIO_Port GPIOC
+#define sensorAgua_Pin GPIO_PIN_5
+#define sensorAgua_GPIO_Port GPIOC
 #define D0_Pin GPIO_PIN_12
 #define D0_GPIO_Port GPIOB
 #define D1_Pin GPIO_PIN_13
