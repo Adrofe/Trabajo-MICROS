@@ -83,10 +83,14 @@ void Error_Handler(void);
 #define D6_GPIO_Port GPIOD
 #define D7_Pin GPIO_PIN_11
 #define D7_GPIO_Port GPIOD
+#define Ventilador_Pin GPIO_PIN_0
+#define Ventilador_GPIO_Port GPIOD
 #define BombaAgua_Pin GPIO_PIN_4
 #define BombaAgua_GPIO_Port GPIOD
-#define RS_Pin GPIO_PIN_0
-#define RS_GPIO_Port GPIOE
+#define Buzzer_Pin GPIO_PIN_5
+#define Buzzer_GPIO_Port GPIOB
+#define RS_Pin GPIO_PIN_9
+#define RS_GPIO_Port GPIOB
 #define E_Pin GPIO_PIN_1
 #define E_GPIO_Port GPIOE
 /* USER CODE BEGIN Private defines */

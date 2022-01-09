@@ -46,12 +46,14 @@ ADC_HandleTypeDef hadc1;
 ADC_HandleTypeDef hadc2;
 
 TIM_HandleTypeDef htim2;
+TIM_HandleTypeDef htim3;
+TIM_HandleTypeDef htim4;
 TIM_HandleTypeDef htim6;
 
 /* USER CODE BEGIN PV */
-bool motor = 0;
-bool agua = 0;
+bool bomba = 0;
 
+//LCD
 uint8_t Rh_byte1, Rh_byte2, Temp_byte1, Temp_byte2;
 uint16_t SUM, RH, TEMP;
 
@@ -59,6 +61,7 @@ float temperatura = 0;
 float humedad = 0;
 uint8_t presencia = 0;
 
+//Sensores
 uint32_t valorAgua;
 uint32_t valorLDR;
 
@@ -71,6 +74,8 @@ static void MX_TIM2_Init(void);
 static void MX_ADC1_Init(void);
 static void MX_TIM6_Init(void);
 static void MX_ADC2_Init(void);
+static void MX_TIM3_Init(void);
+static void MX_TIM4_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -79,11 +84,11 @@ static void MX_ADC2_Init(void);
 /* USER CODE BEGIN 0 */
 
 /********************************* FUNCIONES DHT11 ***********************/
-//Definir los puertos donde está el sensor:
+//Definir los puertos donde esta el sensor:
 #define DHT11_PORT DHT11_GPIO_Port
 #define DHT11_PIN DHT11_Pin
 
-void Set_Pin_Output (GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin)
+void Set_Pin_Output (GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin) //pin como out
 {
 	GPIO_InitTypeDef GPIO_InitStruct = {0};
 	GPIO_InitStruct.Pin = GPIO_Pin;
@@ -91,7 +96,7 @@ void Set_Pin_Output (GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin)
 	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
 	HAL_GPIO_Init(GPIOx, &GPIO_InitStruct);
 }
-void Set_Pin_Input (GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin)
+void Set_Pin_Input (GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin)  //pin como in
 {
 	GPIO_InitTypeDef GPIO_InitStruct = {0};
 	GPIO_InitStruct.Pin = GPIO_Pin;
@@ -109,12 +114,12 @@ void delay (uint16_t time)
 
 void DHT11_Start (void)
 {
-	HAL_GPIO_WritePin(DHT11_PORT, DHT11_PIN, 1);     //Initialize with Data pin HIGH
+	HAL_GPIO_WritePin(DHT11_PORT, DHT11_PIN, 1);    //Inicia el pin como HIGH
 	HAL_Delay(300);
-	Set_Pin_Output (DHT11_PORT, DHT11_PIN);  // set the pin as output
-	HAL_GPIO_WritePin (DHT11_PORT, DHT11_PIN, 0);   // pull the pin low
-	delay (18000);   // wait for 18ms
-	Set_Pin_Input(DHT11_PORT, DHT11_PIN);    // set as input
+	Set_Pin_Output (DHT11_PORT, DHT11_PIN);         //pin como out para transmitir
+	HAL_GPIO_WritePin (DHT11_PORT, DHT11_PIN, 0);   //pin en LOW para iniciar la comunicacion
+	delay (18000);   								//18ms
+	Set_Pin_Input(DHT11_PORT, DHT11_PIN);           //pin como in para recibir
 }
 
 uint8_t DHT11_Check_Response (void)
@@ -124,10 +129,10 @@ uint8_t DHT11_Check_Response (void)
 	if (!(HAL_GPIO_ReadPin (DHT11_PORT, DHT11_PIN)))
 	{
 		delay (80);
-		if ((HAL_GPIO_ReadPin (DHT11_PORT, DHT11_PIN))) Response = 1;
+		if ((HAL_GPIO_ReadPin (DHT11_PORT, DHT11_PIN))) Response = 1;   //El pin responde
 		else Response = -1;
 	}
-	while ((HAL_GPIO_ReadPin (DHT11_PORT, DHT11_PIN)));   // wait for the pin to go low
+	while ((HAL_GPIO_ReadPin (DHT11_PORT, DHT11_PIN)));      			//Espera a que el pin se ponga LOW
 
 	return Response;
 }
@@ -137,34 +142,70 @@ uint8_t DHT11_Read (void)
 	uint8_t i,j;
 	for (j=0;j<8;j++)
 	{
-		while (!(HAL_GPIO_ReadPin (DHT11_PORT, DHT11_PIN)));   // wait for the pin to go high
-		delay (40);   // wait for 40 us
-		if (!(HAL_GPIO_ReadPin (DHT11_PORT, DHT11_PIN)))   // if the pin is low
+		while (!(HAL_GPIO_ReadPin (DHT11_PORT, DHT11_PIN)));     //Espera a que el pin se ponga HIGH
+		delay (40);  											 //40 us
+		if (!(HAL_GPIO_ReadPin (DHT11_PORT, DHT11_PIN)))  		 //Si el pin esta en LOW
 		{
-			i&= ~(1<<(7-j));   // write 0
+			i&= ~(1<<(7-j));   									 // write 0
 		}
-		else i|= (1<<(7-j));  // if the pin is high, write 1
-		while ((HAL_GPIO_ReadPin (DHT11_PORT, DHT11_PIN)));  // wait for the pin to go low
+		else i|= (1<<(7-j));  									 //Si el pin esta en HIHG, write 1
+		while ((HAL_GPIO_ReadPin (DHT11_PORT, DHT11_PIN)));  	 //Espera a que el pin se ponga LOW
 	}
 	return i;
 }
-///////////////////////////////////////////////////////////////////////////
+void leerDatosSensorDHT11(){
+	  DHT11_Start();              		  //se inicializa el sensor
+	  presencia = DHT11_Check_Response(); //esperamos a su respuesta
+	  Rh_byte1 = DHT11_Read();			  //
+	  Rh_byte2 = DHT11_Read();			  // Se leen los 5 siguientes bytes de datos correspondientes a la humedad y temperatura
+	  Temp_byte1 = DHT11_Read();          //
+	  Temp_byte2 = DHT11_Read();          //
+	  SUM = DHT11_Read();
+
+	  TEMP = Temp_byte1;                  //valor de temperatura
+	  RH = Rh_byte1;					  //valor de humedad
+
+	  temperatura = (float) TEMP;
+	  humedad = (float) RH;
+}
+
+void  escribirDatosDHT11aLCD(){
+	LCD1602_clear();
+	LCD1602_print("Temp: ");            //valores mostrados en la LCD
+	LCD1602_PrintFloat(temperatura);
+	LCD1602_print("ºC");
+	LCD1602_2ndLine();
+	LCD1602_print("RH: ");
+	LCD1602_PrintFloat(humedad);
+	LCD1602_print("%");
+}
+////////////////////////////////*****CALLBACKS*****///////////////////////////////////////////
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
-	if((GPIO_Pin == Boton_Pin) && (motor==0) && (agua == 1)){
+	if((GPIO_Pin == Boton_Pin) && (bomba==0)){
+		if((valorAgua>350)){
 		HAL_TIM_Base_Start_IT(&htim2);
 		HAL_GPIO_WritePin(GPIOD,BombaAgua_Pin,1);
-		motor = 1;
+		bomba = 1;
 		HAL_GPIO_TogglePin(GPIOD,GPIO_PIN_14);
+		}
+		else{
+			HAL_GPIO_WritePin(GPIOB,Buzzer_Pin,1);
+			HAL_TIM_Base_Start_IT(&htim3);
+			LCD1602_print("No hay agua");
+			LCD1602_2ndLine();
+			LCD1602_print(" ");
+		}
 
 	}
 	else{
+	LCD1602_print(" La bomba ya ");
     LCD1602_2ndLine();
-	LCD1602_print("FuncionaPuto");
+	LCD1602_print("   esta ON   ");
 	}
 }
 
-void HAL_ADC_ConvCpltCallback (ADC_HandleTypeDef * hadc){
+void HAL_ADC_ConvCpltCallback (ADC_HandleTypeDef * hadc){ //Conversores
 
 	if (hadc->Instance == ADC1){
 		valorAgua = HAL_ADC_GetValue(&hadc1);
@@ -208,17 +249,20 @@ int main(void)
   MX_ADC1_Init();
   MX_TIM6_Init();
   MX_ADC2_Init();
+  MX_TIM3_Init();
+  MX_TIM4_Init();
   /* USER CODE BEGIN 2 */
 
-  //PRUEBA LCD
+  //Inicializacion LCD
   LCD1602_Begin8BIT(RS_GPIO_Port, RS_Pin, E_Pin, D0_GPIO_Port, D0_Pin, D1_Pin, D2_Pin, D3_Pin, D4_GPIO_Port, D4_Pin, D5_Pin, D6_Pin, D7_Pin);
-  LCD1602_print("Hola");
+  LCD1602_clear();
+  LCD1602_print("   Iniciando   ");
+  LCD1602_2ndLine();
+  LCD1602_print("    sistema    ");
   //LCD1602_PrintFloat(temperatura);
 
-
-  //Sensor humedad
-  HAL_TIM_Base_Start(&htim6);
-  HAL_Delay(2000);
+  HAL_TIM_Base_Start(&htim6); //Se inicia el temporizador del sensor de humedad
+  HAL_Delay(2000);            //2s
 
   /* USER CODE END 2 */
 
@@ -229,70 +273,51 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	  HAL_Delay(10);
-	  // GPIO INPUT test
+	  HAL_Delay(10); //10ms
 
-
-	  //AGUA
-	 // if (HAL_GPIO_ReadPin (GPIOC, SensorAgua_Pin)){
-	//	  HAL_GPIO_WritePin(GPIOD,GPIO_PIN_15,1);
-	//	  agua = 0;
-	 // }
-	 // else {
-		//  HAL_GPIO_WritePin(GPIOD,GPIO_PIN_15,0);
-		//  agua = 1;
-	 // }
-
-
-	  //ADC CON INTERRUPCIONES
+	  //Inicializamos los ADC
 	  HAL_ADC_Start_IT(&hadc1);
 	  HAL_ADC_Start_IT(&hadc2);
 
-	  //ADC test
-	  if (valorAgua>350) {
-		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, 1);
-	  }
-	  else HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, 0);
-
-	  if (valorLDR>900) {
+	  //Control de regadio por luminosidad (riego automatico por la noche)
+	  if (valorLDR<900) {
+		  if((valorAgua>350)){
+		  		HAL_TIM_Base_Start_IT(&htim4);
+		  		HAL_GPIO_WritePin(GPIOD,BombaAgua_Pin,1);
+		  		bomba = 1;
+		  		HAL_GPIO_TogglePin(GPIOD,GPIO_PIN_14);
+		  		}
+		  		else{
+		  			HAL_GPIO_WritePin(GPIOB,Buzzer_Pin,1);
+		  			HAL_TIM_Base_Start_IT(&htim4);
+		  			LCD1602_print("No hay agua");
+		  			LCD1602_2ndLine();
+		  			LCD1602_print(" ");
+		  		}
 	  		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, 1);
 	  	  }
 	  	  else HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, 0);
 
+
+	  //VENTILADOR
+	  if (temperatura > 25.0){ //Ventilacion en caso de alta temperatura
+		  HAL_GPIO_WritePin(GPIOD,Ventilador_Pin,1);
+	  }
+	  else {
+		  HAL_GPIO_WritePin(GPIOD,Ventilador_Pin,0);
+	  }
+
 	  //SENSOR HUMEDAD
 	  uint32_t tiempo_espera = 2000;
-	  uint32_t tickstart = HAL_GetTick();
+	  uint32_t tickstart = HAL_GetTick(); //se crea un delay de 2s sin bloquear el micro
 	  while((HAL_GetTick() - tickstart) < tiempo_espera){
 
 	  }
-	  DHT11_Start();
-	  presencia = DHT11_Check_Response();
-	  Rh_byte1 = DHT11_Read();
-	  Rh_byte2 = DHT11_Read();
-	  Temp_byte1 = DHT11_Read();
-	  Temp_byte2 = DHT11_Read();
-	  SUM = DHT11_Read();
 
-	  TEMP = Temp_byte1;
-	  RH = Rh_byte1;
+	  leerDatosSensorDHT11();
 
-	  temperatura = (float) TEMP;
-	  humedad = (float) RH;
+	  escribirDatosDHT11aLCD();
 
-	  LCD1602_clear();
-	  LCD1602_print("TempA: ");
-	  LCD1602_PrintFloat(temperatura);
-	  LCD1602_2ndLine();
-	  LCD1602_print("RH: ");
-	  LCD1602_PrintFloat(humedad);
-
-	  //HELICE
-	//  if (temperatura > X){
-	//	  HAL_GPIO_WritePin(GPIOD, HELICE, 1);
-	//  }
-	//  else {
-	//	  HAL_GPIO_WritePin(GPIOD, HELICE, 0);
-	 // }
   }
   /* USER CODE END 3 */
 }
@@ -459,9 +484,9 @@ static void MX_TIM2_Init(void)
 
   /* USER CODE END TIM2_Init 1 */
   htim2.Instance = TIM2;
-  htim2.Init.Prescaler = 1000;
+  htim2.Init.Prescaler = 15000;
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim2.Init.Period = 336000;
+  htim2.Init.Period = 10000;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
@@ -482,6 +507,96 @@ static void MX_TIM2_Init(void)
   /* USER CODE BEGIN TIM2_Init 2 */
 
   /* USER CODE END TIM2_Init 2 */
+
+}
+
+/**
+  * @brief TIM3 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM3_Init(void)
+{
+
+  /* USER CODE BEGIN TIM3_Init 0 */
+
+  /* USER CODE END TIM3_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM3_Init 1 */
+
+  /* USER CODE END TIM3_Init 1 */
+  htim3.Instance = TIM3;
+  htim3.Init.Prescaler = 5000;
+  htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim3.Init.Period = 10000;
+  htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim3, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim3, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM3_Init 2 */
+
+  /* USER CODE END TIM3_Init 2 */
+
+}
+
+/**
+  * @brief TIM4 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM4_Init(void)
+{
+
+  /* USER CODE BEGIN TIM4_Init 0 */
+
+  /* USER CODE END TIM4_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM4_Init 1 */
+
+  /* USER CODE END TIM4_Init 1 */
+  htim4.Instance = TIM4;
+  htim4.Init.Prescaler = 10000;
+  htim4.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim4.Init.Period = 25000;
+  htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim4.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim4) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim4, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim4, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM4_Init 2 */
+
+  /* USER CODE END TIM4_Init 2 */
 
 }
 
@@ -544,14 +659,16 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(DHT11_GPIO_Port, DHT11_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, D0_Pin|D1_Pin|D2_Pin|D3_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, D0_Pin|D1_Pin|D2_Pin|D3_Pin
+                          |Buzzer_Pin|RS_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOD, D4_Pin|D5_Pin|D6_Pin|D7_Pin
-                          |GPIO_PIN_13|GPIO_PIN_14|GPIO_PIN_15|BombaAgua_Pin, GPIO_PIN_RESET);
+                          |GPIO_PIN_13|GPIO_PIN_14|GPIO_PIN_15|Ventilador_Pin
+                          |BombaAgua_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOE, RS_Pin|E_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(E_GPIO_Port, E_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : Boton_Pin */
   GPIO_InitStruct.Pin = Boton_Pin;
@@ -566,28 +683,32 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(DHT11_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : D0_Pin D1_Pin D2_Pin D3_Pin */
-  GPIO_InitStruct.Pin = D0_Pin|D1_Pin|D2_Pin|D3_Pin;
+  /*Configure GPIO pins : D0_Pin D1_Pin D2_Pin D3_Pin
+                           Buzzer_Pin RS_Pin */
+  GPIO_InitStruct.Pin = D0_Pin|D1_Pin|D2_Pin|D3_Pin
+                          |Buzzer_Pin|RS_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /*Configure GPIO pins : D4_Pin D5_Pin D6_Pin D7_Pin
-                           PD13 PD14 PD15 BombaAgua_Pin */
+                           PD13 PD14 PD15 Ventilador_Pin
+                           BombaAgua_Pin */
   GPIO_InitStruct.Pin = D4_Pin|D5_Pin|D6_Pin|D7_Pin
-                          |GPIO_PIN_13|GPIO_PIN_14|GPIO_PIN_15|BombaAgua_Pin;
+                          |GPIO_PIN_13|GPIO_PIN_14|GPIO_PIN_15|Ventilador_Pin
+                          |BombaAgua_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : RS_Pin E_Pin */
-  GPIO_InitStruct.Pin = RS_Pin|E_Pin;
+  /*Configure GPIO pin : E_Pin */
+  GPIO_InitStruct.Pin = E_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
+  HAL_GPIO_Init(E_GPIO_Port, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
   HAL_NVIC_SetPriority(EXTI0_IRQn, 0, 0);
@@ -612,15 +733,24 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   /* USER CODE BEGIN Callback 0 */
 
   /* USER CODE END Callback 0 */
-  if (htim->Instance == TIM1) {
+  if (htim->Instance == TIM1) { //temporizador del sistema
     HAL_IncTick();
   }
   /* USER CODE BEGIN Callback 1 */
-  if (htim->Instance == TIM2){
-	  motor = 0;
+  if (htim->Instance == TIM2){  //temporizador del regado manual
+	  bomba = 0;
 	  HAL_GPIO_WritePin(GPIOD,BombaAgua_Pin,0);
 	  HAL_TIM_Base_Stop_IT(&htim2);
   }
+  if (htim->Instance == TIM3){  //temporizador buzzer
+	  HAL_TIM_Base_Stop_IT(&htim3);
+	  HAL_GPIO_WritePin(GPIOB,Buzzer_Pin,0);
+  }
+  if (htim->Instance == TIM4){  //temporizador regado automatico
+  	  HAL_TIM_Base_Stop_IT(&htim4);
+  	  bomba = 0;
+  	  HAL_GPIO_WritePin(GPIOD,BombaAgua_Pin,0);
+    }
   /* USER CODE END Callback 1 */
 }
 
