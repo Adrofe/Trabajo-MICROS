@@ -89,10 +89,10 @@ void Error_Handler(void);
 #define BombaAgua_GPIO_Port GPIOD
 #define Buzzer_Pin GPIO_PIN_5
 #define Buzzer_GPIO_Port GPIOB
+#define E_Pin GPIO_PIN_8
+#define E_GPIO_Port GPIOB
 #define RS_Pin GPIO_PIN_9
 #define RS_GPIO_Port GPIOB
-#define E_Pin GPIO_PIN_1
-#define E_GPIO_Port GPIOE
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */
