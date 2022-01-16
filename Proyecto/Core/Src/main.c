@@ -73,9 +73,9 @@ static void MX_GPIO_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_ADC1_Init(void);
 static void MX_TIM6_Init(void);
-static void MX_ADC2_Init(void);
 static void MX_TIM3_Init(void);
 static void MX_TIM4_Init(void);
+static void MX_ADC2_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -183,19 +183,14 @@ void  escribirDatosDHT11aLCD(){
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
 	if((GPIO_Pin == Boton_Pin) && (bomba==0)){
-		if((valorAgua>350)){
+		if((valorAgua>1350)&&(humedad<60)){
 			HAL_TIM_Base_Start_IT(&htim2);
 			HAL_GPIO_WritePin(GPIOD,BombaAgua_Pin,1);
 			bomba = 1;
-			HAL_GPIO_TogglePin(GPIOD,GPIO_PIN_14);
 		}
 		else{
-			HAL_GPIO_WritePin(GPIOB,Buzzer_Pin,1);
-			HAL_TIM_Base_Start_IT(&htim3);
 			LCD1602_clear();
 			LCD1602_print("No hay agua");
-			LCD1602_2ndLine();
-			LCD1602_print(" ");
 		}
 
 	}
@@ -211,11 +206,14 @@ void HAL_ADC_ConvCpltCallback (ADC_HandleTypeDef * hadc){ //Conversores
 
 	if (hadc->Instance == ADC1){
 		valorAgua = HAL_ADC_GetValue(&hadc1);
+		HAL_TIM_Base_Start_IT(&htim4);
 	}
 
 	if (hadc->Instance == ADC2){
 		valorLDR = HAL_ADC_GetValue(&hadc2);
+		HAL_TIM_Base_Start_IT(&htim4);
 	}
+
 }
 /* USER CODE END 0 */
 
@@ -250,9 +248,9 @@ int main(void)
   MX_TIM2_Init();
   MX_ADC1_Init();
   MX_TIM6_Init();
-  MX_ADC2_Init();
   MX_TIM3_Init();
   MX_TIM4_Init();
+  MX_ADC2_Init();
   /* USER CODE BEGIN 2 */
 
   //Inicializacion LCD
@@ -264,10 +262,12 @@ int main(void)
   //LCD1602_PrintFloat(temperatura);
 
   HAL_TIM_Base_Start(&htim6); //Se inicia el temporizador del sensor de humedad
+
+  HAL_Delay(2000);            //2s
+
   //Inicializamos los ADC
   HAL_ADC_Start_IT(&hadc1);
   HAL_ADC_Start_IT(&hadc2);
-  HAL_Delay(2000);            //2s
 
   /* USER CODE END 2 */
 
@@ -278,29 +278,39 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	  HAL_Delay(10); //10ms
+	  //HAL_Delay(10); //10ms
 
-
+	  //AGUA
+	  if (valorAgua<1300){
+		  HAL_GPIO_WritePin(GPIOD,GPIO_PIN_14,1);
+		  HAL_GPIO_WritePin(GPIOD,GPIO_PIN_15,0);
+	  }
+	  else {
+		  HAL_GPIO_WritePin(GPIOD,GPIO_PIN_14,0);
+		  HAL_GPIO_WritePin(GPIOD,GPIO_PIN_15,1);
+	  }
 
 	  //Control de regadio por luminosidad (riego automatico por la noche)
-	  if (valorLDR<500) {
-		  if((valorAgua>350)){
-		  		HAL_TIM_Base_Start_IT(&htim4);
+	  if ((valorLDR<225)&&(bomba==0)) {
+		  if((valorAgua>1350)&&(humedad<60)){
+		  		HAL_TIM_Base_Start_IT(&htim2);
 		  		HAL_GPIO_WritePin(GPIOD,BombaAgua_Pin,1);
 		  		bomba = 1;
-		  		HAL_GPIO_TogglePin(GPIOD,GPIO_PIN_14);
 		  		}
 		  else{
-		  		HAL_GPIO_WritePin(GPIOB,Buzzer_Pin,1);
-		  		HAL_TIM_Base_Start_IT(&htim4);
 		  		LCD1602_print("No hay agua");
 		  		LCD1602_2ndLine();
 		  		LCD1602_print(" ");
 		  		}
-	  		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, 1);
+	  	  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, 1);
 	  	  }
-	  	  else HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, 0);
+	  	  else HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, 0);
 
+	  //Apagado de regadio en caso de lluvia (aumento de la humedad)
+	  if(humedad>60){
+		  HAL_GPIO_WritePin(GPIOD,BombaAgua_Pin,0);
+		  bomba = 0;
+	  }
 
 	  //VENTILADOR
 	  if (temperatura > 25.0){ //Ventilacion en caso de alta temperatura
@@ -311,7 +321,7 @@ int main(void)
 	  }
 
 	  //SENSOR HUMEDAD
-	  uint32_t tiempo_espera = 2000;
+	  uint32_t tiempo_espera = 1000;
 	  uint32_t tickstart = HAL_GetTick(); //se crea un delay de 2s sin bloquear el micro
 	  while((HAL_GetTick() - tickstart) < tiempo_espera){
 
@@ -360,7 +370,7 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
 
   if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_1) != HAL_OK)
   {
@@ -389,9 +399,9 @@ static void MX_ADC1_Init(void)
   */
   hadc1.Instance = ADC1;
   hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV8;
-  hadc1.Init.Resolution = ADC_RESOLUTION_10B;
-  hadc1.Init.ScanConvMode = ENABLE;
-  hadc1.Init.ContinuousConvMode = ENABLE;
+  hadc1.Init.Resolution = ADC_RESOLUTION_12B;
+  hadc1.Init.ScanConvMode = DISABLE;
+  hadc1.Init.ContinuousConvMode = DISABLE;
   hadc1.Init.DiscontinuousConvMode = DISABLE;
   hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
   hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
@@ -440,8 +450,8 @@ static void MX_ADC2_Init(void)
   hadc2.Instance = ADC2;
   hadc2.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV8;
   hadc2.Init.Resolution = ADC_RESOLUTION_12B;
-  hadc2.Init.ScanConvMode = ENABLE;
-  hadc2.Init.ContinuousConvMode = ENABLE;
+  hadc2.Init.ScanConvMode = DISABLE;
+  hadc2.Init.ContinuousConvMode = DISABLE;
   hadc2.Init.DiscontinuousConvMode = DISABLE;
   hadc2.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
   hadc2.Init.ExternalTrigConv = ADC_SOFTWARE_START;
@@ -487,7 +497,7 @@ static void MX_TIM2_Init(void)
 
   /* USER CODE END TIM2_Init 1 */
   htim2.Instance = TIM2;
-  htim2.Init.Prescaler = 15000;
+  htim2.Init.Prescaler = 10000;
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim2.Init.Period = 10000;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
@@ -532,9 +542,9 @@ static void MX_TIM3_Init(void)
 
   /* USER CODE END TIM3_Init 1 */
   htim3.Instance = TIM3;
-  htim3.Init.Prescaler = 5000;
+  htim3.Init.Prescaler = 10000;
   htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim3.Init.Period = 10000;
+  htim3.Init.Period = 500;
   htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim3) != HAL_OK)
@@ -577,9 +587,9 @@ static void MX_TIM4_Init(void)
 
   /* USER CODE END TIM4_Init 1 */
   htim4.Instance = TIM4;
-  htim4.Init.Prescaler = 10000;
+  htim4.Init.Prescaler = 500;
   htim4.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim4.Init.Period = 25000;
+  htim4.Init.Period = 10000;
   htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim4.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim4) != HAL_OK)
@@ -729,7 +739,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     HAL_IncTick();
   }
   /* USER CODE BEGIN Callback 1 */
-  if (htim->Instance == TIM2){  //temporizador del regado manual
+  if (htim->Instance == TIM2){  //temporizador del regado
 	  bomba = 0;
 	  HAL_GPIO_WritePin(GPIOD,BombaAgua_Pin,0);
 	  HAL_TIM_Base_Stop_IT(&htim2);
@@ -738,10 +748,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	  HAL_TIM_Base_Stop_IT(&htim3);
 	  HAL_GPIO_WritePin(GPIOB,Buzzer_Pin,0);
   }
-  if (htim->Instance == TIM4){  //temporizador regado automatico
+  if (htim->Instance == TIM4){  //temporizador sensores
   	  HAL_TIM_Base_Stop_IT(&htim4);
-  	  bomba = 0;
-  	  HAL_GPIO_WritePin(GPIOD,BombaAgua_Pin,0);
+  	  HAL_ADC_Start_IT(&hadc1);
+  	  HAL_ADC_Start_IT(&hadc2);
     }
   /* USER CODE END Callback 1 */
 }
