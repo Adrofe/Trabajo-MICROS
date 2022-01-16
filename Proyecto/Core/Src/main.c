@@ -183,10 +183,16 @@ void  escribirDatosDHT11aLCD(){
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
 	if((GPIO_Pin == Boton_Pin) && (bomba==0)){
-		if((valorAgua>1350)&&(humedad<60)){
-			HAL_TIM_Base_Start_IT(&htim2);
-			HAL_GPIO_WritePin(GPIOD,BombaAgua_Pin,1);
-			bomba = 1;
+		if(valorAgua>1350){
+			if(humedad<60){
+				HAL_TIM_Base_Start_IT(&htim2);
+				HAL_GPIO_WritePin(GPIOD,BombaAgua_Pin,1);
+				bomba = 1;
+			}
+			else{
+				LCD1602_clear();
+				LCD1602_print("Entorno humedo");
+			}
 		}
 		else{
 			LCD1602_clear();
@@ -291,20 +297,35 @@ int main(void)
 	  }
 
 	  //Control de regadio por luminosidad (riego automatico por la noche)
-	  if ((valorLDR<225)&&(bomba==0)) {
-		  if((valorAgua>1350)&&(humedad<60)){
-		  		HAL_TIM_Base_Start_IT(&htim2);
-		  		HAL_GPIO_WritePin(GPIOD,BombaAgua_Pin,1);
-		  		bomba = 1;
-		  		}
-		  else{
-		  		LCD1602_print("No hay agua");
-		  		LCD1602_2ndLine();
-		  		LCD1602_print(" ");
-		  		}
-	  	  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, 1);
-	  	  }
-	  	  else HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, 0);
+	  if (valorLDR<225){
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, 1);
+			  if(bomba==0) {
+		  	  	  if(valorAgua>1350){
+		  	  			  if(humedad<60){
+		  	  				  HAL_TIM_Base_Start_IT(&htim2);
+		  	  				  HAL_GPIO_WritePin(GPIOD,BombaAgua_Pin,1);
+		  	  				  bomba = 1;
+		  	  			  }
+		  	  			  else{
+		  	  				LCD1602_clear();
+		  	  				LCD1602_print("Entorno humedo");
+		  	  			  }
+		  	  	  }
+		  	  	  else{
+		  	  		  LCD1602_print("No hay agua");
+		  	  	  }
+			  }
+		  	 else{
+		  	  	LCD1602_clear();
+		  	  	LCD1602_print(" La bomba ya ");
+		  	  	LCD1602_2ndLine();
+		  	  	LCD1602_print("   esta ON   ");
+			  }
+	  }
+	  else{
+		HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, 0);
+		  }
+
 
 	  //Apagado de regadio en caso de lluvia (aumento de la humedad)
 	  if(humedad>60){
@@ -672,7 +693,7 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, D0_Pin|D1_Pin|D2_Pin|D3_Pin
-                          |Buzzer_Pin|E_Pin|RS_Pin, GPIO_PIN_RESET);
+                          |E_Pin|RS_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOD, D4_Pin|D5_Pin|D6_Pin|D7_Pin
@@ -693,9 +714,9 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(DHT11_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : D0_Pin D1_Pin D2_Pin D3_Pin
-                           Buzzer_Pin E_Pin RS_Pin */
+                           E_Pin RS_Pin */
   GPIO_InitStruct.Pin = D0_Pin|D1_Pin|D2_Pin|D3_Pin
-                          |Buzzer_Pin|E_Pin|RS_Pin;
+                          |E_Pin|RS_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -744,10 +765,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	  HAL_GPIO_WritePin(GPIOD,BombaAgua_Pin,0);
 	  HAL_TIM_Base_Stop_IT(&htim2);
   }
-  if (htim->Instance == TIM3){  //temporizador buzzer
-	  HAL_TIM_Base_Stop_IT(&htim3);
-	  HAL_GPIO_WritePin(GPIOB,Buzzer_Pin,0);
-  }
+
   if (htim->Instance == TIM4){  //temporizador sensores
   	  HAL_TIM_Base_Stop_IT(&htim4);
   	  HAL_ADC_Start_IT(&hadc1);
