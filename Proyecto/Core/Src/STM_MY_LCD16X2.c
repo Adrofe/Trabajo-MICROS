@@ -117,7 +117,7 @@ static void LCD1602_TIM_Config(void)
 	//Update request source 
 	TIM3->CR1 &= ~(1UL << 2);
 	// Set bit 3 High to enable One-Pulse mode
-	TIM3->CR1 |= (1UL << 3);				  
+	TIM3->CR1 |= (1UL << 3);
 	//Set the Prescalar
 	TIM3->PSC = clockSpeed-1;
 	//Set and Auto-Reload Value to delay the timer 1 sec
